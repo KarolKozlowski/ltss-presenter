@@ -1,0 +1,8 @@
+entity_filter:
+  include:
+    entities: []
+    entity_globs:
+      - "*temperature*"
+  exclude:
+    entity_globs: []
+    entities: []

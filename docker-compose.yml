@@ -1,0 +1,14 @@
+services:
+  ltss-presenter:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_SSLMODE: require
+      POSTGRES_DB: homeassistant
+      POSTGRES_USER: homeassistant
+      POSTGRES_PASSWORD: password
+      INCLUDE_ENTITY_GLOBS: "*temperature*"
+      LOG_DSN_UNMASKED: 0
