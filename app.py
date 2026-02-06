@@ -1,15 +1,15 @@
-import os
-import re
 import fnmatch
 import logging
+import os
+import re
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
+import psycopg2
 import yaml
 from dotenv import load_dotenv
-import psycopg2
-from psycopg2.extras import DictCursor
 from flask import Flask, jsonify, render_template, request
+from psycopg2.extras import DictCursor
 
 load_dotenv()
 
@@ -86,7 +86,9 @@ def _build_filter_state(config: dict) -> dict:
 
     env_include_globs = os.getenv("INCLUDE_ENTITY_GLOBS", "")
     if env_include_globs:
-        include_globs = [glob.strip() for glob in env_include_globs.split(",") if glob.strip()]
+        include_globs = [
+            glob.strip() for glob in env_include_globs.split(",") if glob.strip()
+        ]
 
     return {
         "include_entities": include_entities,
@@ -95,7 +97,9 @@ def _build_filter_state(config: dict) -> dict:
         "exclude_patterns": _compile_globs(exclude_globs),
     }
 
+
 FILTER_STATE = _build_filter_state(_load_filter_config())
+
 
 def _matches_patterns(entity_id: str, patterns: list[re.Pattern[str]]) -> bool:
     return any(pattern.match(entity_id) for pattern in patterns)
@@ -109,9 +113,12 @@ def _filter_entity_ids(entity_ids: list[str]) -> list[str]:
 
     filtered: list[str] = []
     for entity_id in entity_ids:
-        in_include = entity_id in include_entities or _matches_patterns(entity_id, include_patterns)
-        in_exclude = entity_id in exclude_entities or _matches_patterns(entity_id, exclude_patterns)
-
+        in_include = entity_id in include_entities or _matches_patterns(
+            entity_id, include_patterns
+        )
+        in_exclude = entity_id in exclude_entities or _matches_patterns(
+            entity_id, exclude_patterns
+        )
 
         if in_include and not in_exclude:
             filtered.append(entity_id)
@@ -207,7 +214,9 @@ def timeseries():
         labels.append(_iso(row["time"]))
         points.append(row["value"])
 
-    return jsonify({"entity_id": entity_id, "value": value, "labels": labels, "points": points})
+    return jsonify(
+        {"entity_id": entity_id, "value": value, "labels": labels, "points": points}
+    )
 
 
 if __name__ == "__main__":
