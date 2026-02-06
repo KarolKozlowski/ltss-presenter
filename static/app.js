@@ -20,7 +20,7 @@ function getQueryParam(key) {
 }
 
 async function fetchMetrics() {
-  const res = await fetch("/api/metrics");
+  const res = await fetch("api/metrics");
   const data = await res.json();
   metricSelect.innerHTML = "";
 
@@ -41,7 +41,7 @@ async function fetchSeries() {
   if (startInput.value) params.set("start", startInput.value);
   if (endInput.value) params.set("end", endInput.value);
 
-  const res = await fetch(`/api/timeseries?${params.toString()}`);
+  const res = await fetch(`api/timeseries?${params.toString()}`);
   const data = await res.json();
 
   const labels = data.labels || [];
