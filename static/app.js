@@ -81,7 +81,7 @@ async function fetchSeries() {
   });
 
   chart.setOption({
-    grid: { left: 28, right: 20, top: 16, bottom: 36 },
+    grid: { left: 16, right: 16, top: 16, bottom: 16, containLabel: true },
     tooltip: {
       trigger: "axis",
       valueFormatter: (value) =>
