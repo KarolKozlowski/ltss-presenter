@@ -211,7 +211,9 @@ def timeseries():
     entity_id, mapped_name = _resolve_metric(metric_id)
     allowed = metric_id in METRIC_MAP or _filter_entity_ids([entity_id])
     if not allowed:
-        logger.warning("Blocked metric_id=%s entity_id=%s by filter", metric_id, entity_id)
+        logger.warning(
+            "Blocked metric_id=%s entity_id=%s by filter", metric_id, entity_id
+        )
         return jsonify({"error": "metric_id is not allowed"}), 404
 
     start = _parse_iso(request.args.get("start"))
