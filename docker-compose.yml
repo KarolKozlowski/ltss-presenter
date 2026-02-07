@@ -1,14 +1,21 @@
 services:
-  ltss-presenter:
-    build: .
+  airgradient:
+    image: git.dotnot.pl/karol.kozlowski/ltss-presenter:latest
     ports:
-      - "5000:5000"
+      - "20822:5000"
     environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_SSLMODE: require
-      POSTGRES_DB: homeassistant
-      POSTGRES_USER: homeassistant
-      POSTGRES_PASSWORD: password
-      INCLUDE_ENTITY_GLOBS: "*temperature*"
-      LOG_DSN_UNMASKED: 0
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_SSLMODE: ${POSTGRES_SSLMODE}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      INCLUDE_ENTITY_GLOBS: ${INCLUDE_ENTITY_GLOBS}
+      LOG_DSN_UNMASKED: ${LOG_DSN_UNMASKED}
+    networks:
+      - postgres-net
+
+networks:
+  postgres-net:
+    external: true
+    name: postgres_shared-net
