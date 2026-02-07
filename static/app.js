@@ -85,7 +85,7 @@ async function fetchSeries() {
     },
     series: [
       {
-        name: data.name || data.metric_id || data.entity_id,
+        name: data.name || data.metric_id,
         type: "line",
         showSymbol: false,
         areaStyle: { color: "rgba(36, 49, 214, 0.15)" },
@@ -100,7 +100,7 @@ async function handleMetricChange() {
   if (!metricSelect.value) {
     return;
   }
-  setQueryParam("entity_id", metricSelect.value);
+  setQueryParam("metric_id", metricSelect.value);
   await fetchSeries();
 }
 
@@ -118,9 +118,9 @@ loadButton.addEventListener("click", () => {
 
 fetchMetrics()
   .then(() => {
-    const entityId = getQueryParam("entity_id");
-    if (entityId) {
-      metricSelect.value = entityId;
+    const metricId = getQueryParam("metric_id");
+    if (metricId) {
+      metricSelect.value = metricId;
       handleMetricChange().catch((err) => {
         console.error(err);
       });

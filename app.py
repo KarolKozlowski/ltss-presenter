@@ -173,20 +173,33 @@ def metrics():
         cur.execute(query)
         rows = cur.fetchall()
 
-    allowed = set(_filter_entity_ids([row["entity_id"] for row in rows]))
+    entity_rows = {row["entity_id"]: row for row in rows}
+    allowed = set(_filter_entity_ids(list(entity_rows.keys())))
 
-    rows = [row for row in rows if (row["entity_id"] in allowed)]
-
-    return jsonify(
-        [
+    response: list[dict[str, Optional[str]]] = []
+    for entity_id in allowed:
+        row = entity_rows[entity_id]
+        response.append(
             {
-                "entity_id": row["entity_id"],
+                "metric_id": entity_id,
                 "unit": row["unit"],
                 "name": row["friendly_name"],
             }
-            for row in rows
-        ]
-    )
+        )
+
+    for metric_id, mapping in METRIC_MAP.items():
+        entity_id = mapping["entity_id"]
+        row = entity_rows.get(entity_id)
+        response.append(
+            {
+                "metric_id": metric_id,
+                "unit": row["unit"] if row else None,
+                "name": mapping.get("name") or (row["friendly_name"] if row else None),
+            }
+        )
+
+    response.sort(key=lambda item: item.get("metric_id") or "")
+    return jsonify(response)
 
 
 @app.route("/api/timeseries")
@@ -244,8 +257,7 @@ def timeseries():
     return jsonify(
         {
             "metric_id": metric_id,
-            "entity_id": entity_id,
-            "name": mapped_name,
+            "name": mapped_name or metric_id,
             "value": value,
             "labels": labels,
             "points": points,
