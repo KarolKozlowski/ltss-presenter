@@ -96,6 +96,36 @@ body {
   justify-content: flex-end;
 }
 
+.quick-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.quick-range-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.quick-range-btn {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quick-range-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 button {
   background: var(--accent);
   color: var(--button-text);

@@ -12,6 +12,7 @@ const dateOptions = {
 };
 const startPicker = flatpickr(startInput, dateOptions);
 const endPicker = flatpickr(endInput, dateOptions);
+const quickButtons = document.querySelectorAll(".quick-range-btn");
 
 function setQueryParam(key, value) {
   const url = new URL(window.location.href);
@@ -25,6 +26,16 @@ function setQueryParam(key, value) {
 
 function getQueryParam(key) {
   return new URLSearchParams(window.location.search).get(key);
+}
+
+function applyQuickRange(hours) {
+  const now = new Date();
+  const start = new Date(now.getTime() - hours * 60 * 60 * 1000);
+  startPicker.setDate(start, true);
+  endPicker.setDate(now, true);
+  handleMetricChange().catch((err) => {
+    console.error(err);
+  });
 }
 
 async function fetchMetrics() {
@@ -148,6 +159,15 @@ if (!startInput.value) {
 if (!endInput.value) {
   endPicker.setDate(now, true);
 }
+
+quickButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const hours = Number(button.dataset.hours || 0);
+    if (hours > 0) {
+      applyQuickRange(hours);
+    }
+  });
+});
 
 window.addEventListener("resize", () => {
   chart.resize();
