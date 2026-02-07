@@ -105,6 +105,7 @@ body {
 }
 
 .quick-range-label {
+  display: none;
   color: var(--muted);
   font-size: 0.9rem;
   letter-spacing: 0.02em;
