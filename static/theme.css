@@ -13,6 +13,8 @@
   --picker-bg: #121826;
   --picker-hover: #222b3a;
   --button-text: #0b0d12;
+  --chart-line: #2431d6;
+  --chart-area: rgba(36, 49, 214, 0.15);
   --font-base-serif: "Source Serif 4", "Georgia", serif;
   --font-base-sans: "Inter", "Segoe UI", Tahoma, sans-serif;
 }

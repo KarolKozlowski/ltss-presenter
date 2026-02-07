@@ -128,7 +128,12 @@ def _build_metric_map(config: dict) -> dict[str, dict[str, str]]:
             logger.warning("Missing entity_id for metric %s", metric_id)
             continue
         name = entry.get("name", "")
-        metric_map[metric_id] = {"entity_id": entity_id, "name": name}
+        chart_type = entry.get("chart_type", "line")
+        metric_map[metric_id] = {
+            "entity_id": entity_id,
+            "name": name,
+            "chart_type": chart_type,
+        }
 
     return metric_map
 
@@ -162,11 +167,15 @@ def _filter_entity_ids(entity_ids: list[str]) -> list[str]:
     return filtered
 
 
-def _resolve_metric(metric_id: str) -> tuple[str, str]:
+def _resolve_metric(metric_id: str) -> tuple[str, str, str]:
     if metric_id in METRIC_MAP:
         mapping = METRIC_MAP[metric_id]
-        return mapping["entity_id"], mapping.get("name", "")
-    return metric_id, ""
+        return (
+            mapping["entity_id"],
+            mapping.get("name", ""),
+            mapping.get("chart_type", "line"),
+        )
+    return metric_id, "", "line"
 
 
 @app.route("/")
@@ -225,7 +234,7 @@ def timeseries():
     if not metric_id:
         return jsonify({"error": "metric_id is required"}), 400
 
-    entity_id, mapped_name = _resolve_metric(metric_id)
+    entity_id, mapped_name, chart_type = _resolve_metric(metric_id)
     allowed = metric_id in METRIC_MAP or _filter_entity_ids([entity_id])
     if not allowed:
         logger.warning(
@@ -281,6 +290,7 @@ def timeseries():
         {
             "metric_id": metric_id,
             "name": mapped_name or metric_id,
+            "chart_type": chart_type,
             "value": value,
             "labels": labels,
             "points": points,

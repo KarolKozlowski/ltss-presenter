@@ -54,6 +54,7 @@ metrics:
   pc_monthly_energy:
     entity_id: sensor.pc_monthly_energy_consumption
     name: "PC monthly energy"
+    chart_type: line
 ```
 
 ## Run locally

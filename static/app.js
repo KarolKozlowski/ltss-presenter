@@ -4,6 +4,9 @@ const endInput = document.getElementById("end");
 const loadButton = document.getElementById("load");
 
 const chart = echarts.init(document.getElementById("chart"));
+const themeVars = getComputedStyle(document.documentElement);
+const chartLineColor = themeVars.getPropertyValue("--chart-line").trim();
+const chartAreaColor = themeVars.getPropertyValue("--chart-area").trim();
 const dateOptions = {
   enableTime: true,
   time_24hr: true,
@@ -72,6 +75,8 @@ async function fetchSeries() {
   const labels = data.labels || [];
   const points = data.points || [];
 
+  const chartType = data.chart_type || "line";
+
   const seriesData = labels.map((label, index) => {
     const value = points[index];
     if (value == null) {
@@ -111,10 +116,11 @@ async function fetchSeries() {
     series: [
       {
         name: data.name || data.metric_id || data.entity_id,
-        type: "line",
+        type: chartType,
         showSymbol: false,
-        areaStyle: { color: "rgba(36, 49, 214, 0.15)" },
-        lineStyle: { color: "#2431d6", width: 2 },
+        areaStyle: chartType === "line" ? { color: chartAreaColor} : undefined,
+        lineStyle: chartType === "line" ? { color: chartLineColor, width: 2 } : undefined,
+        itemStyle: chartType === "bar" ? { color: chartLineColor } : undefined,
         data: seriesData,
       },
     ],
