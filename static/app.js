@@ -31,6 +31,14 @@ function getQueryParam(key) {
   return new URLSearchParams(window.location.search).get(key);
 }
 
+async function fetchConfig() {
+  const res = await fetch("api/config");
+  if (!res.ok) {
+    return {};
+  }
+  return res.json();
+}
+
 function applyQuickRange(hours) {
   const now = new Date();
   const start = new Date(now.getTime() - hours * 60 * 60 * 1000);
@@ -154,8 +162,9 @@ loadButton.addEventListener("click", () => {
 });
 
 fetchMetrics()
-  .then(() => {
-    const metricId = getQueryParam("metric_id");
+  .then(async () => {
+    const config = await fetchConfig();
+    const metricId = getQueryParam("metric_id") || config.default_metric;
     if (metricId) {
       metricSelect.value = metricId;
       handleMetricChange().catch((err) => {

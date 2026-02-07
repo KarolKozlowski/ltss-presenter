@@ -50,6 +50,8 @@ entity_filter:
     entities: []
     entity_globs: []
 
+default_metric: pc_monthly_energy
+
 metrics:
   pc_monthly_energy:
     entity_id: sensor.pc_monthly_energy_consumption

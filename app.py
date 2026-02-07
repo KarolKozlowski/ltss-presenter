@@ -141,8 +141,10 @@ def _build_metric_map(config: dict) -> dict[str, dict[str, Any]]:
     return metric_map
 
 
-FILTER_STATE = _build_filter_state(_load_filter_config())
-METRIC_MAP = _build_metric_map(_load_filter_config())
+CONFIG = _load_filter_config()
+FILTER_STATE = _build_filter_state(CONFIG)
+METRIC_MAP = _build_metric_map(CONFIG)
+DEFAULT_METRIC = CONFIG.get("default_metric")
 
 
 def _matches_patterns(entity_id: str, patterns: list[re.Pattern[str]]) -> bool:
@@ -231,6 +233,11 @@ def metrics():
 
     response.sort(key=lambda item: item.get("metric_id") or "")
     return jsonify(response)
+
+
+@app.route("/api/config")
+def config():
+    return jsonify({"default_metric": DEFAULT_METRIC})
 
 
 @app.route("/api/timeseries")
