@@ -98,7 +98,26 @@ def _build_filter_state(config: dict) -> dict:
     }
 
 
+def _build_metric_map(config: dict) -> dict[str, dict[str, str]]:
+    metrics = config.get("metrics", {}) or {}
+    metric_map: dict[str, dict[str, str]] = {}
+
+    for metric_id, entry in metrics.items():
+        if not isinstance(entry, dict):
+            logger.warning("Invalid metrics entry for %s", metric_id)
+            continue
+        entity_id = entry.get("entity_id")
+        if not entity_id:
+            logger.warning("Missing entity_id for metric %s", metric_id)
+            continue
+        name = entry.get("name", "")
+        metric_map[metric_id] = {"entity_id": entity_id, "name": name}
+
+    return metric_map
+
+
 FILTER_STATE = _build_filter_state(_load_filter_config())
+METRIC_MAP = _build_metric_map(_load_filter_config())
 
 
 def _matches_patterns(entity_id: str, patterns: list[re.Pattern[str]]) -> bool:
@@ -124,6 +143,13 @@ def _filter_entity_ids(entity_ids: list[str]) -> list[str]:
             filtered.append(entity_id)
 
     return filtered
+
+
+def _resolve_metric(metric_id: str) -> tuple[str, str]:
+    if metric_id in METRIC_MAP:
+        mapping = METRIC_MAP[metric_id]
+        return mapping["entity_id"], mapping.get("name", "")
+    return metric_id, ""
 
 
 @app.route("/")
@@ -165,14 +191,15 @@ def metrics():
 
 @app.route("/api/timeseries")
 def timeseries():
-    entity_id = request.args.get("entity_id")
-    if not entity_id:
-        return jsonify({"error": "entity_id is required"}), 400
+    metric_id = request.args.get("metric_id") or request.args.get("entity_id")
+    if not metric_id:
+        return jsonify({"error": "metric_id is required"}), 400
 
-    allowed = _filter_entity_ids([entity_id])
+    entity_id, mapped_name = _resolve_metric(metric_id)
+    allowed = metric_id in METRIC_MAP or _filter_entity_ids([entity_id])
     if not allowed:
-        logger.warning("Blocked entity_id=%s by filter", entity_id)
-        return jsonify({"error": "entity_id is not allowed"}), 404
+        logger.warning("Blocked metric_id=%s entity_id=%s by filter", metric_id, entity_id)
+        return jsonify({"error": "metric_id is not allowed"}), 404
 
     start = _parse_iso(request.args.get("start"))
     end = _parse_iso(request.args.get("end"))
@@ -215,7 +242,14 @@ def timeseries():
         points.append(row["value"])
 
     return jsonify(
-        {"entity_id": entity_id, "value": value, "labels": labels, "points": points}
+        {
+            "metric_id": metric_id,
+            "entity_id": entity_id,
+            "name": mapped_name,
+            "value": value,
+            "labels": labels,
+            "points": points,
+        }
     )
 
 

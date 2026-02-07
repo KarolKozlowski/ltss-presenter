@@ -4,8 +4,8 @@ Minimal Flask app for reading Home Assistant long-term statistics (LTSS) from Po
 
 ## Endpoints
 
-- `GET /api/metrics` - List available entity IDs and units.
-- `GET /api/timeseries?entity_id=...&value=state&start=...&end=...` - Time-series JSON: `{ labels, points }`.
+- `GET /api/metrics` - List available metric IDs and units.
+- `GET /api/timeseries?metric_id=...&value=state&start=...&end=...` - Time-series JSON: `{ labels, points }`.
 
 ## Configuration
 
@@ -49,6 +49,11 @@ entity_filter:
   include:
     entities: []
     entity_globs: []
+
+metrics:
+  pc_monthly_energy:
+    entity_id: sensor.pc_monthly_energy_consumption
+    name: "PC monthly energy"
 ```
 
 ## Run locally

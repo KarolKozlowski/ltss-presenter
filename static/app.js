@@ -26,8 +26,8 @@ async function fetchMetrics() {
 
   for (const item of data) {
     const opt = document.createElement("option");
-    opt.value = item.entity_id;
-    const label = item.name || item.entity_id;
+    opt.value = item.metric_id;
+    const label = item.name || item.metric_id;
     opt.textContent = `${label} (${item.unit || ""})`;
     metricSelect.appendChild(opt);
   }
@@ -35,7 +35,7 @@ async function fetchMetrics() {
 
 async function fetchSeries() {
   const params = new URLSearchParams({
-    entity_id: metricSelect.value,
+    metric_id: metricSelect.value,
     value: "state",
   });
   if (startInput.value) params.set("start", startInput.value);
@@ -85,7 +85,7 @@ async function fetchSeries() {
     },
     series: [
       {
-        name: `${data.entity_id}`,
+        name: data.name || data.metric_id || data.entity_id,
         type: "line",
         showSymbol: false,
         areaStyle: { color: "rgba(36, 49, 214, 0.15)" },
