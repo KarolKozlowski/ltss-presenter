@@ -269,17 +269,31 @@ def timeseries():
         params.append(end)
 
     where_sql = " AND ".join(where)
-    query = f"""
-        SELECT
-            time,
-            CASE
-                WHEN state ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN state::double precision
-                ELSE NULL
-            END AS value
-        FROM ltss
-        WHERE {where_sql}
-        ORDER BY time ASC
-    """
+    if not start and not end:
+        query = f"""
+            SELECT
+                time,
+                CASE
+                    WHEN state ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN state::double precision
+                    ELSE NULL
+                END AS value
+            FROM ltss
+            WHERE {where_sql}
+            ORDER BY time DESC
+            LIMIT 1
+        """
+    else:
+        query = f"""
+            SELECT
+                time,
+                CASE
+                    WHEN state ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN state::double precision
+                    ELSE NULL
+                END AS value
+            FROM ltss
+            WHERE {where_sql}
+            ORDER BY time ASC
+        """
 
     with _get_conn() as conn, conn.cursor(cursor_factory=DictCursor) as cur:
         cur.execute(query, params)
