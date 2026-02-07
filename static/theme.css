@@ -13,4 +13,6 @@
   --picker-bg: #121826;
   --picker-hover: #222b3a;
   --button-text: #0b0d12;
+  --font-base-serif: "Source Serif 4", "Georgia", serif;
+  --font-base-sans: "Inter", "Segoe UI", Tahoma, sans-serif;
 }
