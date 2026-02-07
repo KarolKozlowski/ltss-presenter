@@ -47,7 +47,11 @@ async function fetchMetrics() {
     const opt = document.createElement("option");
     opt.value = item.metric_id;
     const label = item.name || item.metric_id;
-    opt.textContent = `${label} (${item.unit || ""})`;
+    if (item.unit) {
+      opt.textContent = `${label} (${item.unit})`;
+    } else {
+      opt.textContent = label;
+    }
     metricSelect.appendChild(opt);
   }
 }
