@@ -75,7 +75,11 @@ async function fetchSeries() {
   const labels = data.labels || [];
   const points = data.points || [];
 
-  const chartType = data.chart_type || "line";
+  const chartOptions = { ...data.chart_options } || {};
+  const chartType = chartOptions.type || "line";
+  const seriesSmooth = chartOptions.smooth || false;
+  delete chartOptions.type;
+  delete chartOptions.smooth;
 
   const seriesData = labels.map((label, index) => {
     const value = points[index];
@@ -117,11 +121,13 @@ async function fetchSeries() {
       {
         name: data.name || data.metric_id || data.entity_id,
         type: chartType,
+        smooth: seriesSmooth,
         showSymbol: false,
-        areaStyle: chartType === "line" ? { color: chartAreaColor} : undefined,
-        lineStyle: chartType === "line" ? { color: chartLineColor, width: 2 } : undefined,
-        itemStyle: chartType === "bar" ? { color: chartLineColor } : undefined,
+        areaStyle: { color: chartAreaColor},
+        lineStyle: { color: chartLineColor, width: 2 },
+        itemStyle: { color: chartLineColor },
         data: seriesData,
+        ...chartOptions,
       },
     ],
   });

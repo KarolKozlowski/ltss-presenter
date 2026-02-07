@@ -115,9 +115,9 @@ def _build_filter_state(config: dict) -> dict:
     }
 
 
-def _build_metric_map(config: dict) -> dict[str, dict[str, str]]:
+def _build_metric_map(config: dict) -> dict[str, dict[str, Any]]:
     metrics = config.get("metrics", {}) or {}
-    metric_map: dict[str, dict[str, str]] = {}
+    metric_map: dict[str, dict[str, Any]] = {}
 
     for metric_id, entry in metrics.items():
         if not isinstance(entry, dict):
@@ -128,11 +128,14 @@ def _build_metric_map(config: dict) -> dict[str, dict[str, str]]:
             logger.warning("Missing entity_id for metric %s", metric_id)
             continue
         name = entry.get("name", "")
-        chart_type = entry.get("chart_type", "line")
+        chart_options = entry.get("chart_options", {})
+        if not isinstance(chart_options, dict):
+            logger.warning("Invalid chart_options for metric %s", metric_id)
+            chart_options = {}
         metric_map[metric_id] = {
             "entity_id": entity_id,
             "name": name,
-            "chart_type": chart_type,
+            "chart_options": chart_options,
         }
 
     return metric_map
@@ -167,15 +170,15 @@ def _filter_entity_ids(entity_ids: list[str]) -> list[str]:
     return filtered
 
 
-def _resolve_metric(metric_id: str) -> tuple[str, str, str]:
+def _resolve_metric(metric_id: str) -> tuple[str, str, dict[str, Any]]:
     if metric_id in METRIC_MAP:
         mapping = METRIC_MAP[metric_id]
         return (
             mapping["entity_id"],
             mapping.get("name", ""),
-            mapping.get("chart_type", "line"),
+            mapping.get("chart_options", {}),
         )
-    return metric_id, "", "line"
+    return metric_id, "", {}
 
 
 @app.route("/")
@@ -202,7 +205,7 @@ def metrics():
     entity_rows = {row["entity_id"]: row for row in rows}
     allowed = set(_filter_entity_ids(list(entity_rows.keys())))
 
-    response: list[dict[str, Optional[str]]] = []
+    response: list[dict[str, Any]] = []
     for entity_id in allowed:
         row = entity_rows[entity_id]
         response.append(
@@ -210,6 +213,7 @@ def metrics():
                 "metric_id": entity_id,
                 "unit": row["unit"],
                 "name": row["friendly_name"],
+                "chart_options": {},
             }
         )
 
@@ -221,6 +225,7 @@ def metrics():
                 "metric_id": metric_id,
                 "unit": row["unit"] if row else None,
                 "name": mapping.get("name") or (row["friendly_name"] if row else None),
+                "chart_options": mapping.get("chart_options", {}),
             }
         )
 
@@ -234,7 +239,7 @@ def timeseries():
     if not metric_id:
         return jsonify({"error": "metric_id is required"}), 400
 
-    entity_id, mapped_name, chart_type = _resolve_metric(metric_id)
+    entity_id, mapped_name, chart_options = _resolve_metric(metric_id)
     allowed = metric_id in METRIC_MAP or _filter_entity_ids([entity_id])
     if not allowed:
         logger.warning(
@@ -290,7 +295,7 @@ def timeseries():
         {
             "metric_id": metric_id,
             "name": mapped_name or metric_id,
-            "chart_type": chart_type,
+            "chart_options": chart_options,
             "value": value,
             "labels": labels,
             "points": points,
