@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LTSS Presenter</title>
     <link rel="stylesheet" href="static/style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   </head>
   <body>
@@ -21,11 +22,11 @@
         </div>
         <div class="field">
           <label for="start">Start (ISO)</label>
-          <input id="start" type="text" placeholder="2024-01-01T00:00:00Z" />
+          <input id="start" class="datepicker" type="text" placeholder="YYYY-MM-DD HH:MM" />
         </div>
         <div class="field">
           <label for="end">End (ISO)</label>
-          <input id="end" type="text" placeholder="2024-02-01T00:00:00Z" />
+          <input id="end" class="datepicker" type="text" placeholder="YYYY-MM-DD HH:MM" />
         </div>
         <div class="actions">
           <button id="load">Load chart</button>
@@ -41,6 +42,7 @@
       </footer>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="static/app.js"></script>
   </body>
 </html>

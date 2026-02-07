@@ -4,6 +4,14 @@ const endInput = document.getElementById("end");
 const loadButton = document.getElementById("load");
 
 const chart = echarts.init(document.getElementById("chart"));
+const dateOptions = {
+  enableTime: true,
+  time_24hr: true,
+  dateFormat: "Y-m-d H:i",
+  allowInput: true,
+};
+const startPicker = flatpickr(startInput, dateOptions);
+const endPicker = flatpickr(endInput, dateOptions);
 
 function setQueryParam(key, value) {
   const url = new URL(window.location.href);
@@ -38,8 +46,10 @@ async function fetchSeries() {
     metric_id: metricSelect.value,
     value: "state",
   });
-  if (startInput.value) params.set("start", startInput.value);
-  if (endInput.value) params.set("end", endInput.value);
+  const startDate = startPicker.selectedDates[0] || new Date(startInput.value);
+  const endDate = endPicker.selectedDates[0] || new Date(endInput.value);
+  if (!Number.isNaN(startDate.getTime())) params.set("start", startDate.toISOString());
+  if (!Number.isNaN(endDate.getTime())) params.set("end", endDate.toISOString());
 
   const res = await fetch(`api/timeseries?${params.toString()}`);
   const data = await res.json();
@@ -85,7 +95,7 @@ async function fetchSeries() {
     },
     series: [
       {
-        name: data.name || data.metric_id,
+        name: data.name || data.metric_id || data.entity_id,
         type: "line",
         showSymbol: false,
         areaStyle: { color: "rgba(36, 49, 214, 0.15)" },
@@ -129,6 +139,15 @@ fetchMetrics()
   .catch((err) => {
     console.error(err);
   });
+
+const now = new Date();
+const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+if (!startInput.value) {
+  startPicker.setDate(last24h, true);
+}
+if (!endInput.value) {
+  endPicker.setDate(now, true);
+}
 
 window.addEventListener("resize", () => {
   chart.resize();
