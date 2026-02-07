@@ -99,3 +99,14 @@ make compose
 - The API returns labels as ISO-8601 UTC timestamps and points as numeric values.
 - For large ranges, consider adding downsampling or aggregation.
 - `.env` is loaded automatically via `python-dotenv` if present.
+
+## TODO
+
+- Add DB connection pooling to reduce per-request overhead.
+- Cache `/api/metrics` responses with a short TTL.
+- Add a protected `/api/reload-config` endpoint for hot config reloads.
+- Expose preset ranges from config and render them in the UI.
+- Return structured error codes and display them in the UI.
+- Add formatting options for text metrics (prefix/suffix/decimals).
+- Add simple token-based auth for API endpoints.
+- Make API base path configurable for subpath deployments.
