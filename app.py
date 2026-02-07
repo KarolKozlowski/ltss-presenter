@@ -2,7 +2,7 @@ import fnmatch
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 
 import psycopg2
@@ -56,6 +56,23 @@ def _parse_iso(value: Optional[str]) -> Optional[datetime]:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
+
+
+def _validate_date_range(
+    start: Optional[datetime], end: Optional[datetime]
+) -> Optional[str]:
+    if start and end and start >= end:
+        return "start must be earlier than end"
+
+    now = datetime.now(timezone.utc)
+    oldest_allowed = now - timedelta(days=7)
+
+    if start and start < oldest_allowed:
+        return "start cannot be older than 7 days"
+    if end and end < oldest_allowed:
+        return "end cannot be older than 7 days"
+
+    return None
 
 
 def _iso(dt: datetime) -> str:
@@ -219,6 +236,10 @@ def timeseries():
     start = _parse_iso(request.args.get("start"))
     end = _parse_iso(request.args.get("end"))
     value = request.args.get("value", "state").lower()
+
+    validation_error = _validate_date_range(start, end)
+    if validation_error:
+        return jsonify({"error": validation_error}), 400
 
     if value != "state":
         return jsonify({"error": "value must be state"}), 400
