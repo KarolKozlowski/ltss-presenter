@@ -128,6 +128,7 @@ def _build_metric_map(config: dict) -> dict[str, dict[str, Any]]:
             logger.warning("Missing entity_id for metric %s", metric_id)
             continue
         name = entry.get("name", "")
+        type = entry.get("type", "line")
         chart_options = entry.get("chart_options", {})
         if not isinstance(chart_options, dict):
             logger.warning("Invalid chart_options for metric %s", metric_id)
@@ -135,6 +136,7 @@ def _build_metric_map(config: dict) -> dict[str, dict[str, Any]]:
         metric_map[metric_id] = {
             "entity_id": entity_id,
             "name": name,
+            "type": type,
             "chart_options": chart_options,
         }
 
@@ -172,15 +174,16 @@ def _filter_entity_ids(entity_ids: list[str]) -> list[str]:
     return filtered
 
 
-def _resolve_metric(metric_id: str) -> tuple[str, str, dict[str, Any]]:
+def _resolve_metric(metric_id: str) -> tuple[str, str, str, dict[str, Any]]:
     if metric_id in METRIC_MAP:
         mapping = METRIC_MAP[metric_id]
         return (
             mapping["entity_id"],
             mapping.get("name", ""),
+            mapping.get("type", "line"),
             mapping.get("chart_options", {}),
         )
-    return metric_id, "", {}
+    return metric_id, "", "line", {}
 
 
 @app.route("/")
@@ -215,6 +218,7 @@ def metrics():
                 "metric_id": entity_id,
                 "unit": row["unit"],
                 "name": row["friendly_name"],
+                "type": "line",
                 "chart_options": {},
             }
         )
@@ -227,6 +231,7 @@ def metrics():
                 "metric_id": metric_id,
                 "unit": row["unit"] if row else None,
                 "name": mapping.get("name") or (row["friendly_name"] if row else None),
+                "type": mapping.get("type", "line"),
                 "chart_options": mapping.get("chart_options", {}),
             }
         )
@@ -246,7 +251,7 @@ def timeseries():
     if not metric_id:
         return jsonify({"error": "metric_id is required"}), 400
 
-    entity_id, mapped_name, chart_options = _resolve_metric(metric_id)
+    entity_id, mapped_name, type, chart_options = _resolve_metric(metric_id)
     allowed = metric_id in METRIC_MAP or _filter_entity_ids([entity_id])
     if not allowed:
         logger.warning(
@@ -256,68 +261,66 @@ def timeseries():
 
     start = _parse_iso(request.args.get("start"))
     end = _parse_iso(request.args.get("end"))
-    value = request.args.get("value", "state").lower()
-
-    validation_error = _validate_date_range(start, end)
-    if validation_error:
-        return jsonify({"error": validation_error}), 400
-
-    if value != "state":
-        return jsonify({"error": "value must be state"}), 400
+    latest_only = type == "text" or (not start and not end)
+    if not latest_only:
+        validation_error = _validate_date_range(start, end)
+        if validation_error:
+            return jsonify({"error": validation_error}), 400
 
     where = ["entity_id = %s"]
     params: List[Any] = [entity_id]
 
-    if start:
-        where.append("time >= %s")
-        params.append(start)
-    if end:
-        where.append("time <= %s")
-        params.append(end)
+    if not latest_only:
+        if start:
+            where.append("time >= %s")
+            params.append(start)
+        if end:
+            where.append("time <= %s")
+            params.append(end)
 
     where_sql = " AND ".join(where)
-    if not start and not end:
-        query = f"""
-            SELECT
-                time,
-                CASE
-                    WHEN state ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN state::double precision
-                    ELSE NULL
-                END AS value
-            FROM ltss
-            WHERE {where_sql}
-            ORDER BY time DESC
-            LIMIT 1
-        """
+    if type == "text":
+        value_sql = "state"
     else:
-        query = f"""
-            SELECT
-                time,
-                CASE
-                    WHEN state ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN state::double precision
-                    ELSE NULL
-                END AS value
-            FROM ltss
-            WHERE {where_sql}
-            ORDER BY time ASC
-        """
+        value_sql = "CASE WHEN state ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN state::double precision ELSE NULL END"
+
+    limit_value = 1
+    order_dir = "DESC" if latest_only else "ASC"
+    limit_clause = f"LIMIT {limit_value}" if latest_only else ""
+
+    query = f"""
+        SELECT
+            time,
+            {value_sql} AS value
+        FROM ltss
+        WHERE {where_sql}
+        ORDER BY time {order_dir}
+        {limit_clause}
+    """
 
     with _get_conn() as conn, conn.cursor(cursor_factory=DictCursor) as cur:
         cur.execute(query, params)
         rows = cur.fetchall()
 
     labels: List[str] = []
-    points: List[Optional[float]] = []
+    points: List[Optional[Any]] = []
     for row in rows:
         labels.append(_iso(row["time"]))
         points.append(row["value"])
+
+    response_value: Any = "state"
+    if type == "text":
+        response_value = next(
+            (value for value in reversed(points) if value is not None), None
+        )
 
     return jsonify(
         {
             "metric_id": metric_id,
             "name": mapped_name or metric_id,
+            "type": type,
             "chart_options": chart_options,
-            "value": value,
+            "value": response_value,
             "labels": labels,
             "points": points,
         }

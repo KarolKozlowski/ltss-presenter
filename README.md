@@ -56,8 +56,8 @@ metrics:
   pc_monthly_energy:
     entity_id: sensor.pc_monthly_energy_consumption
     name: "PC monthly energy"
+    type: line
     chart_options:
-      type: line
       smooth: true
 ```
 

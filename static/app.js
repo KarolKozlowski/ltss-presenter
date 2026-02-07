@@ -2,6 +2,7 @@ const metricSelect = document.getElementById("metric");
 const startInput = document.getElementById("start");
 const endInput = document.getElementById("end");
 const loadButton = document.getElementById("load");
+const metricText = document.getElementById("metric-text");
 
 const chart = echarts.init(document.getElementById("chart"));
 const themeVars = getComputedStyle(document.documentElement);
@@ -70,7 +71,6 @@ async function fetchMetrics() {
 async function fetchSeries() {
   const params = new URLSearchParams({
     metric_id: metricSelect.value,
-    value: "state",
   });
   const startDate = startPicker.selectedDates[0] || new Date(startInput.value);
   const endDate = endPicker.selectedDates[0] || new Date(endInput.value);
@@ -84,9 +84,8 @@ async function fetchSeries() {
   const points = data.points || [];
 
   const chartOptions = { ...data.chart_options } || {};
-  const chartType = chartOptions.type || "line";
+  const metricType = data.type || "line";
   const seriesSmooth = chartOptions.smooth || false;
-  delete chartOptions.type;
   delete chartOptions.smooth;
 
   const seriesData = labels.map((label, index) => {
@@ -96,6 +95,21 @@ async function fetchSeries() {
     }
     return [label, Math.round(value * 100) / 100];
   });
+
+  if (metricType === "text") {
+    const lastValue = [...points].reverse().find((value) => value != null);
+    const displayValue =
+      lastValue == null ? '<span class="metric-text-subtle">No data</span>' : lastValue;
+    metricText.innerHTML = displayValue;
+    metricText.style.display = "flex";
+    chart.getDom().style.display = "none";
+    chart.clear();
+    return;
+  }
+
+  metricText.innerHTML = "";
+  metricText.style.display = "none";
+  chart.getDom().style.display = "block";
 
   chart.setOption({
     grid: { left: 16, right: 16, top: 16, bottom: 16, containLabel: true },
@@ -128,7 +142,7 @@ async function fetchSeries() {
     series: [
       {
         name: data.name || data.metric_id || data.entity_id,
-        type: chartType,
+        type: metricType,
         smooth: seriesSmooth,
         showSymbol: false,
         areaStyle: { color: chartAreaColor},
