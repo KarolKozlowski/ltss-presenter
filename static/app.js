@@ -174,18 +174,6 @@ async function handleMetricChange() {
   await fetchSeries();
 }
 
-metricSelect.addEventListener("change", () => {
-  handleMetricChange().catch((err) => {
-    console.error(err);
-  });
-});
-
-loadButton.addEventListener("click", () => {
-  handleMetricChange().catch((err) => {
-    console.error(err);
-  });
-});
-
 fetchMetrics()
   .then(async () => {
     const config = await fetchConfig();
@@ -209,6 +197,19 @@ if (!startInput.value) {
 if (!endInput.value) {
   endPicker.setDate(now, true);
 }
+
+// Event listeners
+metricSelect.addEventListener("change", () => {
+  handleMetricChange().catch((err) => {
+    console.error(err);
+  });
+});
+
+loadButton.addEventListener("click", () => {
+  handleMetricChange().catch((err) => {
+    console.error(err);
+  });
+});
 
 quickButtons.forEach((button) => {
   button.addEventListener("click", () => {
