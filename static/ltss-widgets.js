@@ -147,11 +147,20 @@ if (cards.length) {
     setTextValue(textEl, "");
 
     try {
-      const seriesResponses = await Promise.all(
+      const results = await Promise.allSettled(
         metricIds.map((metricId) =>
           client.fetchTimeseries({ metric_id: metricId, ...paramsBase }),
         ),
       );
+      const seriesResponses = results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value);
+      const failedCount = results.length - seriesResponses.length;
+
+      if (!seriesResponses.length) {
+        setStatus(statusEl, "Failed to load data");
+        return;
+      }
 
       if (seriesResponses.length === 1 && seriesResponses[0].type === "text") {
         chartEl.style.display = "none";
@@ -243,7 +252,11 @@ if (cards.length) {
         }),
       });
 
-      setStatus(statusEl, seriesData.length ? "" : "No data");
+      if (failedCount > 0) {
+        setStatus(statusEl, `Missing ${failedCount} series`);
+      } else {
+        setStatus(statusEl, seriesData.length ? "" : "No data");
+      }
     } catch (error) {
       console.error(error);
       setStatus(statusEl, "Failed to load data");
