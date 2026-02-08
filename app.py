@@ -20,6 +20,28 @@ logger = logging.getLogger("ltss-presenter")
 app = Flask(__name__)
 
 
+# Metric mapping metadata exposed to the UI.
+@dataclass(frozen=True)
+class Metric:
+    metric_id: str
+    name: str
+    type: str
+    chart_options: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class Entity:
+    entity_id: str
+    unit: Optional[str]
+    friendly_name: Optional[str]
+
+
+@dataclass(frozen=True)
+class MetricSeries:
+    labels: list[str]
+    points: list[Optional[Any]]
+
+
 # Centralized environment-backed settings and non-DB helpers.
 class AppConfig:
     def __init__(self, config_path: Optional[str] = None) -> None:
@@ -68,28 +90,6 @@ class AppConfig:
             return {}
         with open(path, "r", encoding="utf-8") as handle:
             return yaml.safe_load(handle) or {}
-
-
-# Metric mapping metadata exposed to the UI.
-@dataclass(frozen=True)
-class Metric:
-    metric_id: str
-    name: str
-    type: str
-    chart_options: dict[str, Any]
-
-
-@dataclass(frozen=True)
-class Entity:
-    entity_id: str
-    unit: Optional[str]
-    friendly_name: Optional[str]
-
-
-@dataclass(frozen=True)
-class MetricSeries:
-    labels: list[str]
-    points: list[Optional[Any]]
 
 
 # Postgres connectivity and DSN masking.
