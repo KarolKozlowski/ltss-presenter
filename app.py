@@ -111,6 +111,7 @@ class AppConfig:
         )
         self.image_build_date = os.getenv("IMAGE_BUILD_DATE", "unknown")
         self.port = int(os.getenv("PORT", "5000"))
+        self.host = os.getenv("HOST", "0.0.0.0")
         self.metrics_cache_ttl = int(
             os.getenv(
                 "METRICS_CACHE_TTL",
@@ -557,4 +558,4 @@ DATABASE = Database(APP_CONFIG)
 LTSSApi(app, REGISTRY, APP_CONFIG, DATABASE)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=APP_CONFIG.port)
+    app.run(host=APP_CONFIG.host, port=APP_CONFIG.port)
