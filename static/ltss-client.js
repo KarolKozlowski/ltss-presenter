@@ -1,5 +1,5 @@
 export function createLtssClient(options = {}) {
-  const baseUrl = (options.baseUrl || "").replace(/\/$/, "");
+  const baseUrl = (options.baseUrl ?? detectBaseUrl()).replace(/\/$/, "");
   const apiPath = (options.apiPath || "/api").replace(/\/$/, "");
 
   function buildUrl(path) {
@@ -38,4 +38,10 @@ export function createLtssClient(options = {}) {
       return fetchJson("/timeseries", params);
     },
   };
+}
+
+function detectBaseUrl() {
+  const base = new URL(".", window.location.href);
+  const path = base.pathname.replace(/\/$/, "");
+  return path === "/" ? "" : path;
 }
