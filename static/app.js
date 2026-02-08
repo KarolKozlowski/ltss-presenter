@@ -18,6 +18,15 @@ const startPicker = flatpickr(startInput, dateOptions);
 const endPicker = flatpickr(endInput, dateOptions);
 const quickButtons = document.querySelectorAll(".quick-range-btn");
 
+const now = new Date();
+const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+if (!startInput.value) {
+  startPicker.setDate(last24h, true);
+}
+if (!endInput.value) {
+  endPicker.setDate(now, true);
+}
+
 function formatNumber(value) {
   if (value == null) {
     return "";
@@ -188,15 +197,6 @@ fetchMetrics()
   .catch((err) => {
     console.error(err);
   });
-
-const now = new Date();
-const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-if (!startInput.value) {
-  startPicker.setDate(last24h, true);
-}
-if (!endInput.value) {
-  endPicker.setDate(now, true);
-}
 
 // Event listeners
 metricSelect.addEventListener("change", () => {
