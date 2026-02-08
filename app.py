@@ -62,6 +62,7 @@ class TTLCache:
             return None
         age = datetime.now(timezone.utc) - entry.stored_at
         if age.total_seconds() > ttl_seconds:
+            logger.debug("Cache expired for key=%s", key)
             self._items.pop(key, None)
             return None
         return entry.value
