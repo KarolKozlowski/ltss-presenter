@@ -108,6 +108,7 @@ if (cards.length) {
     const chartEl = card.querySelector(".ltss-chart-canvas");
     const textEl = card.querySelector(".ltss-chart-text");
     const statusEl = card.querySelector(".ltss-chart-status");
+    const headerEl = card.querySelector(".ltss-card-header");
     const titleEl = card.querySelector(".ltss-card-title");
     const subtitleEl = card.querySelector(".ltss-card-subtitle");
     if (!chartEl) {
@@ -115,23 +116,50 @@ if (cards.length) {
     }
 
     const hours = Number(card.dataset.hours || defaultHours || 24);
-    if (subtitleEl) {
-      subtitleEl.textContent = `Last ${hours}h`;
+    if (!subtitleEl || !subtitleEl.textContent.trim()) {
+      const subtitleText = `Last ${hours}h`;
+      if (headerEl) {
+        if (subtitleEl) {
+          subtitleEl.textContent = subtitleText;
+        } else {
+          const newSubtitleEl = document.createElement("p");
+          newSubtitleEl.className = "ltss-card-subtitle";
+          newSubtitleEl.textContent = subtitleText;
+          headerEl.appendChild(newSubtitleEl);
+        }
+      }
     }
 
-    if (titleEl) {
-      const customTitle = card.dataset.title;
-      if (customTitle) {
-        titleEl.textContent = customTitle;
-      } else if (metricMetas.length === 1 && metricMetas[0]?.name) {
-        titleEl.textContent = metricMetas[0].name;
-      } else if (metricIds.length === 1) {
-        titleEl.textContent = metricIds[0];
-      } else if (metricMetas.length > 1) {
-        titleEl.textContent = metricMetas
-          .map((metric) => metric?.name || metric?.metric_id)
-          .filter(Boolean)
-          .join(" + ");
+    if (!titleEl || !titleEl.textContent.trim()) {
+      const resolvedTitle = (() => {
+        const customTitle = card.dataset.title;
+        if (customTitle) {
+          return customTitle;
+        }
+        if (metricMetas.length === 1 && metricMetas[0]?.name) {
+          return metricMetas[0].name;
+        }
+        if (metricIds.length === 1) {
+          return metricIds[0];
+        }
+        if (metricMetas.length > 1) {
+          return metricMetas
+            .map((metric) => metric?.name || metric?.metric_id)
+            .filter(Boolean)
+            .join(" + ");
+        }
+        return "";
+      })();
+
+      if (resolvedTitle && headerEl) {
+        if (titleEl) {
+          titleEl.textContent = resolvedTitle;
+        } else {
+          const newTitleEl = document.createElement("h3");
+          newTitleEl.className = "ltss-card-title";
+          newTitleEl.textContent = resolvedTitle;
+          headerEl.prepend(newTitleEl);
+        }
       }
     }
 
