@@ -14,6 +14,13 @@
   --button-text: #0b0d12;
   --chart-line: var(--selection);
   --chart-area: rgba(36, 49, 214, 0.15);
+  --chart-grid: rgba(231, 234, 243, 0.2);
+  --chart-text: var(--ink);
+  --chart-series-1: var(--selection);
+  --chart-series-2: #7aa2ff;
+  --chart-series-3: #5f7cd9;
+  --chart-series-4: #8fb0ff;
+  --chart-series-5: #3c57b3;
   --font-base-serif: "Source Serif 4", "Georgia", serif;
   --font-base-sans: "Inter", "Segoe UI", Tahoma, sans-serif;
   --transparent: rgba(0, 0, 0, 0);

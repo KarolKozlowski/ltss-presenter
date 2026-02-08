@@ -67,10 +67,89 @@
         <div id="metric-text" class="metric-text" aria-live="polite"></div>
       </section>
 
+      <section class="panel">
+        <section class="ltss-grid">
+          <article
+            class="ltss-card"
+            data-metric-id="outdoor_temperature"
+            data-hours="24"
+          >
+            <header class="ltss-card-header">
+              <h3 class="ltss-card-title">Wykres 1</h3>
+              <p class="ltss-card-subtitle">Last 24h</p>
+            </header>
+            <div class="ltss-chart">
+              <div class="ltss-chart-canvas" aria-label="Wykres danych"></div>
+              <div class="ltss-chart-text" aria-live="polite"></div>
+              <div class="ltss-chart-status" aria-live="polite">Loading...</div>
+            </div>
+          </article>
+          <article
+            class="ltss-card"
+            data-metric-id="outdoor_humidity"
+            data-hours="24"
+          >
+            <header class="ltss-card-header">
+              <h3 class="ltss-card-title">Wykres 2</h3>
+              <p class="ltss-card-subtitle">Last 24h</p>
+            </header>
+            <div class="ltss-chart">
+              <div class="ltss-chart-canvas" aria-label="Wykres danych"></div>
+              <div class="ltss-chart-text" aria-live="polite"></div>
+              <div class="ltss-chart-status" aria-live="polite">Loading...</div>
+            </div>
+          </article>
+          <article
+            class="ltss-card"
+            data-metric-ids="outdoor_temperature,outdoor_humidity"
+            data-hours="24"
+          >
+            <header class="ltss-card-header">
+              <h3 class="ltss-card-title">Wykres 3</h3>
+              <p class="ltss-card-subtitle">Last 24h</p>
+            </header>
+            <div class="ltss-chart">
+              <div class="ltss-chart-canvas" aria-label="Wykres danych"></div>
+              <div class="ltss-chart-text" aria-live="polite"></div>
+              <div class="ltss-chart-status" aria-live="polite">Loading...</div>
+            </div>
+          </article>
+          <article class="ltss-card" data-hours="24">
+            <header class="ltss-card-header">
+              <h3 class="ltss-card-title">Wykres 4</h3>
+              <p class="ltss-card-subtitle">Last 24h</p>
+            </header>
+            <div class="ltss-chart">
+              <div class="ltss-chart-canvas" aria-label="Wykres danych"></div>
+              <div class="ltss-chart-text" aria-live="polite"></div>
+              <div class="ltss-chart-status" aria-live="polite">Loading...</div>
+            </div>
+          </article>
+
+          <article
+            class="ltss-card ltss-card--full ltss-card--text"
+            data-metric-id="outdoor_aqi_epa_category"
+            data-title="Status powietrza"
+          >
+            <header class="ltss-card-header">
+              <h3 class="ltss-card-title">Status powietrza</h3>
+              <p class="ltss-card-subtitle">Aktualny odczyt</p>
+            </header>
+            <div class="ltss-chart">
+              <div class="ltss-chart-canvas" aria-label="Wykres danych"></div>
+              <div class="ltss-chart-text" aria-live="polite"></div>
+              <div class="ltss-chart-status" aria-live="polite">Loading...</div>
+            </div>
+          </article>
+        </section>
+      </section>
+
       <footer class="footer"></footer>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script type="module" src="static/app.js"></script>
+    <script src="static/ltss-config.js"></script>
+    <script type="module" src="static/ltss-widgets.js"></script>
   </body>
 </html>
