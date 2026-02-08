@@ -1,3 +1,5 @@
+import { createLtssClient } from "./ltss-client.js";
+
 const metricSelect = document.getElementById("metric");
 const startInput = document.getElementById("start");
 const endInput = document.getElementById("end");
@@ -17,6 +19,7 @@ const dateOptions = {
 const startPicker = flatpickr(startInput, dateOptions);
 const endPicker = flatpickr(endInput, dateOptions);
 const quickButtons = document.querySelectorAll(".quick-range-btn");
+const client = createLtssClient( { apiPath: "/api" } );
 
 const now = new Date();
 const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -71,14 +74,6 @@ function getQueryParam(key) {
   return new URLSearchParams(window.location.search).get(key);
 }
 
-async function fetchConfig() {
-  const res = await fetch("api/config");
-  if (!res.ok) {
-    return {};
-  }
-  return res.json();
-}
-
 function applyQuickRange(hours) {
   const now = new Date();
   const start = new Date(now.getTime() - hours * 60 * 60 * 1000);
@@ -90,8 +85,7 @@ function applyQuickRange(hours) {
 }
 
 async function fetchMetrics() {
-  const res = await fetch("api/metrics");
-  const data = await res.json();
+  const data = await client.fetchMetrics();
   metricSelect.innerHTML = "";
 
   for (const item of data) {
@@ -108,16 +102,13 @@ async function fetchMetrics() {
 }
 
 async function fetchSeries() {
-  const params = new URLSearchParams({
-    metric_id: metricSelect.value,
-  });
+  const params = { metric_id: metricSelect.value };
   const startValue = getDateParamValue(startPicker, startInput);
   const endValue = getDateParamValue(endPicker, endInput);
-  if (startValue) params.set("start", startValue);
-  if (endValue) params.set("end", endValue);
+  if (startValue) params.start = startValue;
+  if (endValue) params.end = endValue;
 
-  const res = await fetch(`api/timeseries?${params.toString()}`);
-  const data = await res.json();
+  const data = await client.fetchTimeseries(params);
 
   const chartOptions = { ...data.chart_options } || {};
   const metricType = data.type || "line";
@@ -185,7 +176,7 @@ async function handleMetricChange() {
 
 fetchMetrics()
   .then(async () => {
-    const config = await fetchConfig();
+    const config = await client.fetchConfig();
     const metricId = getQueryParam("metric_id") || config.default_metric;
     if (metricId) {
       metricSelect.value = metricId;
