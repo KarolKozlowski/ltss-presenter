@@ -25,16 +25,6 @@ function formatNumber(value) {
   return (Math.round(Number(value) * 100) / 100).toFixed(2);
 }
 
-function normalizeSeries(series) {
-  return (series || []).map((point) => {
-    const [timestamp, value] = point;
-    if (value == null) {
-      return [timestamp, null];
-    }
-    return [timestamp, Math.round(value * 100) / 100];
-  });
-}
-
 function updateTextMetric(value) {
   const displayValue =
     value == null ? '<span class="metric-text-subtle">No data</span>' : value;
@@ -124,7 +114,7 @@ async function fetchSeries() {
   const metricType = data.type || "line";
   const seriesSmooth = chartOptions.smooth || false;
   delete chartOptions.smooth;
-  const seriesData = normalizeSeries(data.series);
+  const seriesData = data.series || [];
 
   if (metricType === "text") {
     updateTextMetric(data.value);
