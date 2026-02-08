@@ -80,26 +80,23 @@ async function fetchSeries() {
   const res = await fetch(`api/timeseries?${params.toString()}`);
   const data = await res.json();
 
-  const labels = data.labels || [];
-  const points = data.points || [];
-
   const chartOptions = { ...data.chart_options } || {};
   const metricType = data.type || "line";
   const seriesSmooth = chartOptions.smooth || false;
   delete chartOptions.smooth;
-
-  const seriesData = labels.map((label, index) => {
-    const value = points[index];
+  const seriesData = (data.series || []).map((point) => {
+    const [timestamp, value] = point;
     if (value == null) {
-      return [label, null];
+      return [timestamp, null];
     }
-    return [label, Math.round(value * 100) / 100];
+    return [timestamp, Math.round(value * 100) / 100];
   });
 
   if (metricType === "text") {
-    const lastValue = [...points].reverse().find((value) => value != null);
     const displayValue =
-      lastValue == null ? '<span class="metric-text-subtle">No data</span>' : lastValue;
+      data.value == null
+        ? '<span class="metric-text-subtle">No data</span>'
+        : data.value;
     metricText.innerHTML = displayValue;
     metricText.style.display = "flex";
     chart.getDom().style.display = "none";
