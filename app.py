@@ -2,7 +2,7 @@ import fnmatch
 import logging
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 
@@ -25,6 +25,7 @@ app = Flask(__name__)
 class Metric:
     metric_id: str
     name: str
+    unit: Optional[str]
     type: str
     chart_options: dict[str, Any]
 
@@ -217,6 +218,7 @@ class Database:
         return MetricSeries(
             metric_id=metric.metric_id,
             name=metric.name,
+            unit=metric.unit,
             type=metric.type,
             chart_options=metric.chart_options,
             series=series,
@@ -274,12 +276,14 @@ class MetricRegistry:
             metric_map[metric_id] = Metric(
                 metric_id=metric_id,
                 name=name,
+                unit=None,
                 type=metric_type,
                 chart_options=chart_options,
             )
 
         return metric_map
 
+    # Build a mapping of metric_id to entity_id for fetching time-series data
     def _build_metric_entities(self, config: dict) -> dict[str, str]:
         metrics = config.get("metrics", {}) or {}
         metric_entities: dict[str, str] = {}
@@ -329,6 +333,7 @@ class MetricRegistry:
         return Metric(
             metric_id=metric_id,
             name="",
+            unit=None,
             type="line",
             chart_options={},
         )
@@ -341,40 +346,40 @@ class MetricRegistry:
             return True
         return bool(self.filter_entity_ids([metric_id]))
 
-    def metrics_response(self, entity_rows: list[Entity]) -> list[dict[str, Any]]:
+    def metrics_response(self, entity_rows: list[Entity]) -> list[Metric]:
         entity_by_id = {row.entity_id: row for row in entity_rows}
         allowed = set(self.filter_entity_ids(list(entity_by_id.keys())))
         mapped_entity_ids = set(self._metric_entity_map.values())
-        response: list[dict[str, Any]] = []
+        response: list[Metric] = []
 
         for entity_id in allowed:
             if entity_id in mapped_entity_ids:
                 continue
             row = entity_by_id[entity_id]
             response.append(
-                {
-                    "metric_id": entity_id,
-                    "unit": row.unit,
-                    "name": row.friendly_name,
-                    "type": "line",
-                    "chart_options": {},
-                }
+                Metric(
+                    metric_id=entity_id,
+                    name=row.friendly_name or entity_id,
+                    unit=row.unit,
+                    type="line",
+                    chart_options={},
+                )
             )
 
         for metric_id, metric in self._metric_map.items():
             entity_id = self._metric_entity_map.get(metric_id)
             row = entity_by_id.get(entity_id) if entity_id else None
             response.append(
-                {
-                    "metric_id": metric_id,
-                    "unit": row.unit if row else None,
-                    "name": metric.name or (row.friendly_name if row else None),
-                    "type": metric.type,
-                    "chart_options": metric.chart_options,
-                }
+                Metric(
+                    metric_id=metric_id,
+                    name=metric.name or (row.friendly_name if row else metric_id),
+                    unit=row.unit if row else metric.unit,
+                    type=metric.type,
+                    chart_options=metric.chart_options,
+                )
             )
 
-        response.sort(key=lambda item: item.get("metric_id") or "")
+        response.sort(key=lambda item: item.metric_id or "")
         return response
 
 
@@ -400,7 +405,7 @@ class LTSSApi:
 
     def index(self):
         return render_template(
-            "index.html", build_date=self.app_config.image_build_date
+            "index.html",
         )
 
     @staticmethod
@@ -423,7 +428,10 @@ class LTSSApi:
 
     def metrics(self):
         metrics = self.database.fetch_metrics()
-        return jsonify(self.registry.metrics_response(metrics))
+        response = [
+            asdict(metric) for metric in self.registry.metrics_response(metrics)
+        ]
+        return jsonify(response)
 
     def config(self):
         return jsonify({"default_metric": self.app_config.config.get("default_metric")})
@@ -455,6 +463,7 @@ class LTSSApi:
         end = (
             datetime.fromisoformat(end_raw.replace("Z", "+00:00")) if end_raw else None
         )
+        # For text metrics, or if no range is provided, we only fetch the latest value without validating the range.
         latest_only = metric.type == "text" or (not start and not end)
         if not latest_only:
             validation_error = self._validate_date_range(start, end)
@@ -469,16 +478,7 @@ class LTSSApi:
             latest_only,
         )
 
-        return jsonify(
-            {
-                "metric_id": series.metric_id,
-                "name": series.name or series.metric_id,
-                "type": series.type,
-                "chart_options": series.chart_options,
-                "value": series.value,
-                "series": series.series,
-            }
-        )
+        return jsonify(asdict(series))
 
 
 # Initialize configuration from environment
