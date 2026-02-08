@@ -118,10 +118,28 @@ class AppConfig:
                 self.config.get("metrics_cache_ttl", 300),
             )
         )
+        self.cors_allow_origins = self._split_env_list(
+            os.getenv("CORS_ALLOW_ORIGINS", "")
+        )
+        self.cors_enabled = self._bool_from_env(
+            "CORS_ENABLED", default=bool(self.cors_allow_origins)
+        )
 
     @staticmethod
     def _split_env_list(raw_value: str) -> list[str]:
         return [glob.strip() for glob in raw_value.split(",") if glob.strip()]
+
+    @staticmethod
+    def _bool_from_env(key: str, default: bool = False) -> bool:
+        raw_value = os.getenv(key)
+        if raw_value is None:
+            return default
+        value = raw_value.strip().lower()
+        if value in {"1", "true", "yes", "on"}:
+            return True
+        if value in {"0", "false", "no", "off"}:
+            return False
+        return default
 
     @staticmethod
     def _load_yaml(path: str) -> dict:
@@ -463,6 +481,7 @@ class LTSSApi:
         self.app_config = config
         self.database = database
         self._register_routes()
+        self.app.after_request(self._apply_cors)
 
     def _register_routes(self) -> None:
         self.app.add_url_rule("/", view_func=self.index)
@@ -474,6 +493,26 @@ class LTSSApi:
         return render_template(
             "index.html",
         )
+
+    def _apply_cors(self, response):
+        if not self.app_config.cors_enabled:
+            return response
+
+        allowlist = self.app_config.cors_allow_origins
+        origin = request.headers.get("Origin")
+        if "*" in allowlist:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        elif origin and origin in allowlist:
+            response.headers["Access-Control-Allow-Origin"] = origin
+
+        if "Access-Control-Allow-Origin" in response.headers:
+            response.headers.setdefault("Vary", "Origin")
+            response.headers.setdefault("Access-Control-Allow-Methods", "GET, OPTIONS")
+            response.headers.setdefault(
+                "Access-Control-Allow-Headers", "Content-Type, Authorization"
+            )
+
+        return response
 
     @staticmethod
     # Guard against invalid or overly large ranges for time-series requests.

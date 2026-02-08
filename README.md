@@ -23,6 +23,25 @@ Fallback environment variables if `DATABASE_URL` is not set:
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 
+### CORS
+
+Set allowed origins (comma-separated). If empty, CORS stays disabled unless
+explicitly enabled.
+
+```
+CORS_ALLOW_ORIGINS=https://example.com,http://localhost:4000
+```
+
+Force enable or disable CORS explicitly:
+
+```
+CORS_ENABLED=1
+```
+
+```
+CORS_ENABLED=0
+```
+
 ### Entity filters
 
 The app can filter available entities using a Home Assistant style config file.
