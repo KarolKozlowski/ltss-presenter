@@ -377,9 +377,6 @@ class MetricRegistry:
         response.sort(key=lambda item: item.get("metric_id") or "")
         return response
 
-    def config_response(self) -> dict[str, Any]:
-        return {"default_metric": self.default_metric}
-
 
 class LTSSApi:
     def __init__(
@@ -429,7 +426,7 @@ class LTSSApi:
         return jsonify(self.registry.metrics_response(metrics))
 
     def config(self):
-        return jsonify(self.registry.config_response())
+        return jsonify({"default_metric": self.app_config.config.get("default_metric")})
 
     def timeseries(self):
         metric_id = request.args.get("metric_id") or request.args.get("entity_id")
