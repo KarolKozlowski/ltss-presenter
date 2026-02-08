@@ -14,4 +14,11 @@ COPY app.py /app/
 
 EXPOSE 5000
 
-CMD ["python", "app.py"]
+
+COPY entrypoint.sh /app/entrypoint.sh
+COPY gunicorn_conf.py /app/gunicorn_conf.py
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 5000
+
+CMD ["/app/entrypoint.sh"]
