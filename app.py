@@ -43,6 +43,36 @@ class Entity:
     friendly_name: Optional[str]
 
 
+@dataclass
+class CacheEntry:
+    value: Any
+    stored_at: datetime
+
+
+class TTLCache:
+    def __init__(self) -> None:
+        self._items: dict[str, CacheEntry] = {}
+
+    def get(self, key: str, ttl_seconds: int) -> Optional[Any]:
+        ttl_seconds = max(ttl_seconds, 0)
+        if ttl_seconds <= 0:
+            return None
+        entry = self._items.get(key)
+        if not entry:
+            return None
+        age = datetime.now(timezone.utc) - entry.stored_at
+        if age.total_seconds() > ttl_seconds:
+            self._items.pop(key, None)
+            return None
+        return entry.value
+
+    def set(self, key: str, value: Any, ttl_seconds: int) -> None:
+        ttl_seconds = max(ttl_seconds, 0)
+        if ttl_seconds <= 0:
+            return
+        self._items[key] = CacheEntry(value=value, stored_at=datetime.now(timezone.utc))
+
+
 # Centralized environment-backed settings and non-DB helpers.
 class AppConfig:
     def __init__(self, config_path: Optional[str] = None) -> None:
@@ -80,6 +110,12 @@ class AppConfig:
         )
         self.image_build_date = os.getenv("IMAGE_BUILD_DATE", "unknown")
         self.port = int(os.getenv("PORT", "5000"))
+        self.metrics_cache_ttl = int(
+            os.getenv(
+                "METRICS_CACHE_TTL",
+                self.config.get("metrics_cache_ttl", 300),
+            )
+        )
 
     @staticmethod
     def _split_env_list(raw_value: str) -> list[str]:
@@ -104,6 +140,9 @@ class Database:
         self.pg_password = config.pg_password
         self.pg_sslmode = config.pg_sslmode
         self.log_dsn_unmasked = config.log_dsn_unmasked
+        self._cache = TTLCache()
+        self._metrics_cache_ttl = config.metrics_cache_ttl
+        self._series_cache_ttl = 60
 
     def db_dsn(self) -> str:
         if self.database_url:
@@ -137,6 +176,10 @@ class Database:
         return psycopg2.connect(dsn)
 
     def fetch_metrics(self) -> list[Entity]:
+        cached = self._cache.get("metrics", self._metrics_cache_ttl)
+        if cached is not None:
+            return list(cached)
+
         query = """
             SELECT
                 entity_id,
@@ -150,7 +193,7 @@ class Database:
             cur.execute(query)
             rows = cur.fetchall()
 
-        return [
+        metrics = [
             Entity(
                 entity_id=row["entity_id"],
                 unit=row["unit"],
@@ -158,6 +201,8 @@ class Database:
             )
             for row in rows
         ]
+        self._cache.set("metrics", list(metrics), self._metrics_cache_ttl)
+        return metrics
 
     def fetch_timeseries(
         self,
@@ -167,6 +212,11 @@ class Database:
         end: Optional[datetime],
         latest_only: bool,
     ) -> MetricSeries:
+        cache_key = self._series_cache_key(entity_id, start, end, latest_only)
+        cached = self._cache.get(cache_key, self._series_cache_ttl)
+        if cached is not None:
+            return cached
+
         where = ["entity_id = %s"]
         params: List[Any] = [entity_id]
 
@@ -215,7 +265,7 @@ class Database:
             if value is not None:
                 latest_value = value
 
-        return MetricSeries(
+        metric_series = MetricSeries(
             metric_id=metric.metric_id,
             name=metric.name,
             unit=metric.unit,
@@ -224,6 +274,19 @@ class Database:
             series=series,
             value=latest_value if metric.type == "text" else None,
         )
+        self._cache.set(cache_key, metric_series, self._series_cache_ttl)
+        return metric_series
+
+    def _series_cache_key(
+        self,
+        entity_id: str,
+        start: Optional[datetime],
+        end: Optional[datetime],
+        latest_only: bool,
+    ) -> str:
+        start_key = start.isoformat() if start else ""
+        end_key = end.isoformat() if end else ""
+        return f"series:{entity_id}:{latest_only}:{start_key}:{end_key}"
 
 
 # Applies config-driven entity filtering and custom metric mapping.
