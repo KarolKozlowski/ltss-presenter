@@ -372,7 +372,9 @@ class MetricRegistry:
             response.append(
                 Metric(
                     metric_id=metric_id,
-                    name=metric.name or (row.friendly_name if row else metric_id),
+                    name=metric.name
+                    or (row.friendly_name if row else metric_id)
+                    or metric_id,
                     unit=row.unit if row else metric.unit,
                     type=metric.type,
                     chart_options=metric.chart_options,
