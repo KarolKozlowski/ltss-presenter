@@ -18,6 +18,46 @@ const startPicker = flatpickr(startInput, dateOptions);
 const endPicker = flatpickr(endInput, dateOptions);
 const quickButtons = document.querySelectorAll(".quick-range-btn");
 
+function formatNumber(value) {
+  if (value == null) {
+    return "";
+  }
+  return (Math.round(Number(value) * 100) / 100).toFixed(2);
+}
+
+function normalizeSeries(series) {
+  return (series || []).map((point) => {
+    const [timestamp, value] = point;
+    if (value == null) {
+      return [timestamp, null];
+    }
+    return [timestamp, Math.round(value * 100) / 100];
+  });
+}
+
+function updateTextMetric(value) {
+  const displayValue =
+    value == null ? '<span class="metric-text-subtle">No data</span>' : value;
+  metricText.innerHTML = displayValue;
+  metricText.style.display = "flex";
+  chart.getDom().style.display = "none";
+  chart.clear();
+}
+
+function showChart() {
+  metricText.innerHTML = "";
+  metricText.style.display = "none";
+  chart.getDom().style.display = "block";
+}
+
+function getDateParamValue(picker, fallbackInput) {
+  const date = picker.selectedDates[0] || new Date(fallbackInput.value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date.toISOString();
+}
+
 function setQueryParam(key, value) {
   const url = new URL(window.location.href);
   if (value) {
@@ -72,10 +112,10 @@ async function fetchSeries() {
   const params = new URLSearchParams({
     metric_id: metricSelect.value,
   });
-  const startDate = startPicker.selectedDates[0] || new Date(startInput.value);
-  const endDate = endPicker.selectedDates[0] || new Date(endInput.value);
-  if (!Number.isNaN(startDate.getTime())) params.set("start", startDate.toISOString());
-  if (!Number.isNaN(endDate.getTime())) params.set("end", endDate.toISOString());
+  const startValue = getDateParamValue(startPicker, startInput);
+  const endValue = getDateParamValue(endPicker, endInput);
+  if (startValue) params.set("start", startValue);
+  if (endValue) params.set("end", endValue);
 
   const res = await fetch(`api/timeseries?${params.toString()}`);
   const data = await res.json();
@@ -84,36 +124,20 @@ async function fetchSeries() {
   const metricType = data.type || "line";
   const seriesSmooth = chartOptions.smooth || false;
   delete chartOptions.smooth;
-  const seriesData = (data.series || []).map((point) => {
-    const [timestamp, value] = point;
-    if (value == null) {
-      return [timestamp, null];
-    }
-    return [timestamp, Math.round(value * 100) / 100];
-  });
+  const seriesData = normalizeSeries(data.series);
 
   if (metricType === "text") {
-    const displayValue =
-      data.value == null
-        ? '<span class="metric-text-subtle">No data</span>'
-        : data.value;
-    metricText.innerHTML = displayValue;
-    metricText.style.display = "flex";
-    chart.getDom().style.display = "none";
-    chart.clear();
+    updateTextMetric(data.value);
     return;
   }
 
-  metricText.innerHTML = "";
-  metricText.style.display = "none";
-  chart.getDom().style.display = "block";
+  showChart();
 
   chart.setOption({
     grid: { left: 16, right: 16, top: 16, bottom: 16, containLabel: true },
     tooltip: {
       trigger: "axis",
-      valueFormatter: (value) =>
-        value == null ? "" : (Math.round(Number(value) * 100) / 100).toFixed(2),
+      valueFormatter: (value) => formatNumber(value),
     },
     xAxis: {
       type: "time",
@@ -133,7 +157,7 @@ async function fetchSeries() {
       type: "value",
       scale: true,
       axisLabel: {
-        formatter: (value) => (Math.round(value * 100) / 100).toFixed(2),
+        formatter: (value) => formatNumber(value),
       },
     },
     series: [
