@@ -5,7 +5,12 @@
 body {
   margin: 0;
   font-family: var(--font-base-serif);
-  background: radial-gradient(circle at top, var(--bg-grad-1) 0%, var(--bg-grad-2) 55%, var(--bg-grad-3) 100%);
+  background: radial-gradient(
+    circle at top,
+    var(--bg-grad-1) 0%,
+    var(--bg-grad-2) 55%,
+    var(--bg-grad-3) 100%
+  );
   color: var(--ink);
 }
 
@@ -168,8 +173,12 @@ button:hover {
   margin-top: 12px;
 }
 
-.flatpickr-calendar.arrowTop:before { border-bottom-color: var(--fp-bg-dark); }
-.flatpickr-calendar.arrowBottom:before { border-top-color: var(--fp-bg-dark); }
+.flatpickr-calendar.arrowTop:before {
+  border-bottom-color: var(--fp-bg-dark);
+}
+.flatpickr-calendar.arrowBottom:before {
+  border-top-color: var(--fp-bg-dark);
+}
 
 .flatpickr-time input:hover,
 .flatpickr-time .flatpickr-am-pm:hover,
@@ -181,12 +190,18 @@ button:hover {
 
 .numInputWrapper:hover,
 .flatpickr-current-month .flatpickr-monthDropdown-months:hover,
-.flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month {
+.flatpickr-current-month
+  .flatpickr-monthDropdown-months
+  .flatpickr-monthDropdown-month {
   background: var(--fp-bg-dark);
 }
 
-.flatpickr-current-month .flatpickr-monthDropdown-months:hover .flatpickr-monthDropdown-month:hover,
-.flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month:hover {
+.flatpickr-current-month
+  .flatpickr-monthDropdown-months:hover
+  .flatpickr-monthDropdown-month:hover,
+.flatpickr-current-month
+  .flatpickr-monthDropdown-months
+  .flatpickr-monthDropdown-month:hover {
   background-color: var(--test);
 }
 
@@ -198,8 +213,12 @@ span.flatpickr-weekday {
   fill: var(--fp-text);
 }
 
-.flatpickr-months .flatpickr-month { background: var(--fp-bg-medium); }
-span.flatpickr-weekday { background: var(--fp-bg-dark); }
+.flatpickr-months .flatpickr-month {
+  background: var(--fp-bg-medium);
+}
+span.flatpickr-weekday {
+  background: var(--fp-bg-dark);
+}
 
 .flatpickr-months .flatpickr-prev-month:hover,
 .flatpickr-months .flatpickr-next-month:hover {
@@ -211,7 +230,9 @@ span.flatpickr-weekday { background: var(--fp-bg-dark); }
   fill: var(--fp-text);
 }
 
-.dayContainer + .dayContainer { box-shadow: -1px 0 0 var(--fp-bg-dark); }
+.dayContainer + .dayContainer {
+  box-shadow: -1px 0 0 var(--fp-bg-dark);
+}
 
 .flatpickr-day.inRange,
 .flatpickr-day.prevMonthDay.inRange,
@@ -251,4 +272,3 @@ span.flatpickr-weekday { background: var(--fp-bg-dark); }
   color: var(--fp-text);
   border-color: var(--fp-selection);
 }
-

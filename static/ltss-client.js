@@ -1,6 +1,7 @@
 export function createLtssClient(options = {}) {
   const baseUrl = (options.baseUrl ?? detectBaseUrl()).replace(/\/$/, "");
   const apiPath = (options.apiPath || "/api").replace(/\/$/, "");
+  const apiUrl = options.apiUrl ? options.apiUrl.replace(/\/$/, "") : "";
 
   function buildUrl(path) {
     if (!baseUrl) {
@@ -11,7 +12,10 @@ export function createLtssClient(options = {}) {
   }
 
   async function fetchJson(path, params) {
-    const url = new URL(buildUrl(`${apiPath}${path}`), window.location.origin);
+    const endpoint = apiUrl
+      ? `${apiUrl}${path}`
+      : buildUrl(`${apiPath}${path}`);
+    const url = new URL(endpoint, window.location.origin);
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {

@@ -1,3 +1,4 @@
+---
 services:
   airgradient:
     image: git.dotnot.pl/karol.kozlowski/ltss-presenter:latest

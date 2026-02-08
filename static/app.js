@@ -19,7 +19,7 @@ const dateOptions = {
 const startPicker = flatpickr(startInput, dateOptions);
 const endPicker = flatpickr(endInput, dateOptions);
 const quickButtons = document.querySelectorAll(".quick-range-btn");
-const client = createLtssClient( { apiPath: "/api" } );
+const client = createLtssClient({ apiPath: "/api" });
 
 const now = new Date();
 const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -156,7 +156,7 @@ async function fetchSeries() {
         type: metricType,
         smooth: seriesSmooth,
         showSymbol: false,
-        areaStyle: { color: chartAreaColor},
+        areaStyle: { color: chartAreaColor },
         lineStyle: { color: chartLineColor, width: 2 },
         itemStyle: { color: chartLineColor },
         data: seriesData,
