@@ -2,7 +2,7 @@ import fnmatch
 import logging
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 
@@ -30,16 +30,16 @@ class Metric:
 
 
 @dataclass(frozen=True)
+class MetricSeries(Metric):
+    series: list[tuple[str, Optional[Any]]] = field(default_factory=list)
+    value: Optional[Any] = None
+
+
+@dataclass(frozen=True)
 class Entity:
     entity_id: str
     unit: Optional[str]
     friendly_name: Optional[str]
-
-
-@dataclass(frozen=True)
-class MetricSeries:
-    labels: list[str]
-    points: list[Optional[Any]]
 
 
 # Centralized environment-backed settings and non-DB helpers.
@@ -161,7 +161,7 @@ class Database:
     def fetch_timeseries(
         self,
         entity_id: str,
-        metric_type: str,
+        metric: Metric,
         start: Optional[datetime],
         end: Optional[datetime],
         latest_only: bool,
@@ -178,7 +178,7 @@ class Database:
                 params.append(end)
 
         where_sql = " AND ".join(where)
-        if metric_type == "text":
+        if metric.type == "text":
             value_sql = "state"
         else:
             value_sql = (
@@ -204,13 +204,24 @@ class Database:
             cur.execute(query, params)
             rows = cur.fetchall()
 
-        labels: list[str] = []
-        points: list[Optional[Any]] = []
+        series: list[tuple[str, Optional[Any]]] = []
+        latest_value: Optional[Any] = None
         for row in rows:
-            labels.append(row["time"].isoformat())
-            points.append(row["value"])
+            timestamp = row["time"].isoformat()
+            value = row["value"]
+            if metric.type != "text":
+                series.append((timestamp, value))
+            if value is not None:
+                latest_value = value
 
-        return MetricSeries(labels=labels, points=points)
+        return MetricSeries(
+            metric_id=metric.metric_id,
+            name=metric.name,
+            type=metric.type,
+            chart_options=metric.chart_options,
+            series=series,
+            value=latest_value if metric.type == "text" else None,
+        )
 
 
 # Applies config-driven entity filtering and custom metric mapping.
@@ -455,27 +466,20 @@ class LTSSApi:
 
         series = self.database.fetch_timeseries(
             entity_id,
-            metric.type,
+            metric,
             start,
             end,
             latest_only,
         )
 
-        response_value: Any = "state"
-        if metric.type == "text":
-            response_value = next(
-                (value for value in reversed(series.points) if value is not None), None
-            )
-
         return jsonify(
             {
-                "metric_id": metric_id,
-                "name": metric.name or metric_id,
-                "type": metric.type,
-                "chart_options": metric.chart_options,
-                "value": response_value,
-                "labels": series.labels,
-                "points": series.points,
+                "metric_id": series.metric_id,
+                "name": series.name or series.metric_id,
+                "type": series.type,
+                "chart_options": series.chart_options,
+                "value": series.value,
+                "series": series.series,
             }
         )
 
