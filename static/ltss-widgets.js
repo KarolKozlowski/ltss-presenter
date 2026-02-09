@@ -216,26 +216,40 @@ if (cards.length) {
         .filter((result) => result.status === "fulfilled")
         .map((result) => result.value);
       const failedCount = results.length - seriesResponses.length;
-
-      if (!seriesResponses.length) {
-        setStatus(statusEl, "Failed to load data");
-        return;
-      }
-
       if (seriesResponses.length === 1 && seriesResponses[0].type === "text") {
         chartEl.style.display = "none";
-        const latestValue = getLatestSeriesValue(
-          seriesResponses[0].series || [],
-        );
+        const seriesPoints = seriesResponses[0].series || [];
+        const latestValue = getLatestSeriesValue(seriesPoints);
+        let latestTime = "";
+        for (let i = seriesPoints.length - 1; i >= 0; i -= 1) {
+          const timestamp = seriesPoints[i]?.[0];
+          if (timestamp) {
+            const date = new Date(timestamp);
+            if (!Number.isNaN(date.getTime())) {
+              const hoursValue = String(date.getHours()).padStart(2, "0");
+              const minutesValue = String(date.getMinutes()).padStart(2, "0");
+              latestTime = `${hoursValue}:${minutesValue}`;
+              break;
+            }
+          }
+        }
         setTextValue(
           textEl,
           latestValue == null ? "No data" : String(latestValue),
         );
+        if (shouldAutoSubtitle && resolvedSubtitleEl && latestTime) {
+          resolvedSubtitleEl.textContent = latestTime;
+        }
         setStatus(statusEl, "");
         if (latestEl) {
           latestEl.textContent = "";
           latestEl.classList.add("is-hidden");
         }
+        return;
+      }
+
+      if (!seriesResponses.length) {
+        setStatus(statusEl, "Failed to load data");
         return;
       }
 
