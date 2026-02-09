@@ -115,6 +115,18 @@ if (cards.length) {
       return;
     }
 
+    const latestEl =
+      card.querySelector(".ltss-card-latest") ||
+      (() => {
+        if (!headerEl) {
+          return null;
+        }
+        const badge = document.createElement("span");
+        badge.className = "ltss-card-latest";
+        headerEl.appendChild(badge);
+        return badge;
+      })();
+
     const hours = Number(card.dataset.hours || defaultHours || 24);
     if (!subtitleEl || !subtitleEl.textContent.trim()) {
       const subtitleText = `Last ${hours}h`;
@@ -199,6 +211,10 @@ if (cards.length) {
             : String(seriesResponses[0].value),
         );
         setStatus(statusEl, "");
+        if (latestEl) {
+          latestEl.textContent = "";
+          latestEl.classList.add("is-hidden");
+        }
         return;
       }
 
@@ -207,6 +223,28 @@ if (cards.length) {
           statusEl,
           "Text metrics cannot be mixed in multi-series charts",
         );
+        return;
+      }
+
+      if (card.classList.contains("ltss-card--value")) {
+        chartEl.style.display = "none";
+        const primarySeries = seriesResponses[0];
+        const points = primarySeries?.series || [];
+        let latestValue = "";
+        for (let i = points.length - 1; i >= 0; i -= 1) {
+          const value = points[i]?.[1];
+          if (value !== null && value !== undefined && value !== "") {
+            const unit = primarySeries?.unit ? ` ${primarySeries.unit}` : "";
+            latestValue = `${formatNumber(value)}${unit}`;
+            break;
+          }
+        }
+        setTextValue(textEl, latestValue || "No data");
+        if (latestEl) {
+          latestEl.textContent = "";
+          latestEl.classList.add("is-hidden");
+        }
+        setStatus(statusEl, "");
         return;
       }
 
@@ -279,6 +317,22 @@ if (cards.length) {
           return seriesItem;
         }),
       });
+
+      if (latestEl) {
+        latestEl.classList.remove("is-hidden");
+        const primarySeries = seriesResponses[0];
+        const points = primarySeries?.series || [];
+        let latestValue = "";
+        for (let i = points.length - 1; i >= 0; i -= 1) {
+          const value = points[i]?.[1];
+          if (value !== null && value !== undefined && value !== "") {
+            const unit = primarySeries?.unit ? ` ${primarySeries.unit}` : "";
+            latestValue = `${formatNumber(value)}${unit}`;
+            break;
+          }
+        }
+        latestEl.textContent = latestValue;
+      }
 
       if (failedCount > 0) {
         setStatus(statusEl, `Missing ${failedCount} series`);
