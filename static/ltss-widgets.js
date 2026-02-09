@@ -69,6 +69,24 @@ if (cards.length) {
     return null;
   }
 
+  function getLatestSeriesTime(series) {
+    if (!Array.isArray(series)) {
+      return "";
+    }
+    for (let i = series.length - 1; i >= 0; i -= 1) {
+      const timestamp = series[i]?.[0];
+      if (timestamp) {
+        const date = new Date(timestamp);
+        if (!Number.isNaN(date.getTime())) {
+          const hoursValue = String(date.getHours()).padStart(2, "0");
+          const minutesValue = String(date.getMinutes()).padStart(2, "0");
+          return `${hoursValue}:${minutesValue}`;
+        }
+      }
+    }
+    return "";
+  }
+
   function formatTimeLabel(value) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
@@ -104,25 +122,30 @@ if (cards.length) {
     textEl.classList.toggle("is-hidden", !value);
   }
 
-  function setSubtitle(subtitleEl, text, title) {
+  function setSubtitleText(subtitleEl, text) {
     if (!subtitleEl) {
       return;
     }
     subtitleEl.textContent = text || "";
-    subtitleEl.title = title || subtitleEl.dataset.tooltip || "";
   }
 
-  function setLastTime(card, latestTime) {
-    if (!card || !latestTime) {
+  function syncSubtitleTooltip(card, subtitleEl) {
+    if (!card || !subtitleEl) {
       return;
     }
-    const lastTimeEl = card.querySelector(".ltss-card-subtitle-tooltip");
-    if (!lastTimeEl) {
+    const tooltipEl = card.querySelector(".ltss-card-subtitle-tooltip");
+    if (!tooltipEl) {
+      subtitleEl.removeAttribute("data-tooltip");
+      subtitleEl.removeAttribute("title");
       return;
     }
-    lastTimeEl.textContent = latestTime;
-    lastTimeEl.title =
-      lastTimeEl.dataset.tooltip || "Time of last value change.";
+    const tooltipText = tooltipEl.dataset.tooltip || "";
+    if (tooltipText) {
+      subtitleEl.dataset.tooltip = tooltipText;
+    } else {
+      subtitleEl.removeAttribute("data-tooltip");
+    }
+    subtitleEl.removeAttribute("title");
   }
 
   async function resolveMetrics() {
@@ -179,9 +202,7 @@ if (cards.length) {
       headerEl.appendChild(newSubtitleEl);
       resolvedSubtitleEl = newSubtitleEl;
     }
-    if (shouldAutoSubtitle && resolvedSubtitleEl) {
-      setSubtitle(resolvedSubtitleEl, `Last ${hours}h`, "");
-    }
+    syncSubtitleTooltip(card, resolvedSubtitleEl);
 
     if (!titleEl || !titleEl.textContent.trim()) {
       const resolvedTitle = (() => {
@@ -241,31 +262,14 @@ if (cards.length) {
         chartEl.style.display = "none";
         const seriesPoints = seriesResponses[0].series || [];
         const latestValue = getLatestSeriesValue(seriesPoints);
-        let latestTime = "";
-        for (let i = seriesPoints.length - 1; i >= 0; i -= 1) {
-          const timestamp = seriesPoints[i]?.[0];
-          if (timestamp) {
-            const date = new Date(timestamp);
-            if (!Number.isNaN(date.getTime())) {
-              const hoursValue = String(date.getHours()).padStart(2, "0");
-              const minutesValue = String(date.getMinutes()).padStart(2, "0");
-              latestTime = `${hoursValue}:${minutesValue}`;
-              break;
-            }
-          }
-        }
+        const latestTime = getLatestSeriesTime(seriesPoints);
         setTextValue(
           textEl,
           latestValue == null ? "No data" : String(latestValue),
         );
         if (shouldAutoSubtitle && resolvedSubtitleEl && latestTime) {
-          setSubtitle(
-            resolvedSubtitleEl,
-            latestTime,
-            "Time of last value change.",
-          );
+          setSubtitleText(resolvedSubtitleEl, latestTime);
         }
-        setLastTime(card, latestTime);
         setStatus(statusEl, "");
         if (latestEl) {
           latestEl.textContent = "";
@@ -314,13 +318,8 @@ if (cards.length) {
         }
         setTextValue(textEl, latestValue || "No data");
         if (shouldAutoSubtitle && resolvedSubtitleEl && latestTime) {
-          setSubtitle(
-            resolvedSubtitleEl,
-            latestTime,
-            "Time of last value change.",
-          );
+          setSubtitleText(resolvedSubtitleEl, latestTime);
         }
-        setLastTime(card, latestTime);
         if (latestEl) {
           latestEl.textContent = "";
           latestEl.classList.add("is-hidden");
@@ -337,6 +336,8 @@ if (cards.length) {
       const seriesData = seriesResponses.flatMap(
         (series) => series.series || [],
       );
+      const primarySeries = seriesResponses[0];
+      const latestTime = getLatestSeriesTime(primarySeries?.series || []);
 
       const chart = echarts.init(chartEl);
       charts.push(chart);
@@ -401,7 +402,6 @@ if (cards.length) {
 
       if (latestEl) {
         latestEl.classList.remove("is-hidden");
-        const primarySeries = seriesResponses[0];
         const points = primarySeries?.series || [];
         let latestValue = "";
         for (let i = points.length - 1; i >= 0; i -= 1) {
@@ -413,6 +413,10 @@ if (cards.length) {
           }
         }
         latestEl.textContent = latestValue;
+      }
+
+      if (shouldAutoSubtitle && resolvedSubtitleEl && latestTime) {
+        setSubtitleText(resolvedSubtitleEl, latestTime);
       }
 
       if (failedCount > 0) {
