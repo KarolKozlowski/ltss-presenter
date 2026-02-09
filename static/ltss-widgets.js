@@ -26,12 +26,21 @@ if (cards.length) {
     cssVar("--chart-series-4"),
     cssVar("--chart-series-5"),
   ].filter(Boolean);
+  const gradientSeriesColors = [
+    cssVar("--color-gradient1"),
+    cssVar("--color-gradient2"),
+    cssVar("--color-gradient3"),
+    cssVar("--color-gradient4"),
+    cssVar("--color-gradient5"),
+  ].filter(Boolean);
   const configSeriesColors = Array.isArray(config.seriesColors)
     ? config.seriesColors.filter(Boolean)
     : [];
   const baseSeriesColors = themeSeriesColors.length
     ? themeSeriesColors
-    : grayscaleSeries;
+    : gradientSeriesColors.length
+      ? gradientSeriesColors
+      : grayscaleSeries;
   const seriesColors = configSeriesColors.length
     ? configSeriesColors
     : [
@@ -45,6 +54,19 @@ if (cards.length) {
       return "";
     }
     return (Math.round(Number(value) * 100) / 100).toFixed(2);
+  }
+
+  function getLatestSeriesValue(series) {
+    if (!Array.isArray(series)) {
+      return null;
+    }
+    for (let i = series.length - 1; i >= 0; i -= 1) {
+      const value = series[i]?.[1];
+      if (value !== null && value !== undefined && value !== "") {
+        return value;
+      }
+    }
+    return null;
   }
 
   function formatTimeLabel(value) {
@@ -128,18 +150,16 @@ if (cards.length) {
       })();
 
     const hours = Number(card.dataset.hours || defaultHours || 24);
-    if (!subtitleEl || !subtitleEl.textContent.trim()) {
-      const subtitleText = `Last ${hours}h`;
-      if (headerEl) {
-        if (subtitleEl) {
-          subtitleEl.textContent = subtitleText;
-        } else {
-          const newSubtitleEl = document.createElement("p");
-          newSubtitleEl.className = "ltss-card-subtitle";
-          newSubtitleEl.textContent = subtitleText;
-          headerEl.appendChild(newSubtitleEl);
-        }
-      }
+    const shouldAutoSubtitle = !subtitleEl || !subtitleEl.textContent.trim();
+    let resolvedSubtitleEl = subtitleEl;
+    if (!resolvedSubtitleEl && headerEl) {
+      const newSubtitleEl = document.createElement("p");
+      newSubtitleEl.className = "ltss-card-subtitle";
+      headerEl.appendChild(newSubtitleEl);
+      resolvedSubtitleEl = newSubtitleEl;
+    }
+    if (shouldAutoSubtitle && resolvedSubtitleEl) {
+      resolvedSubtitleEl.textContent = `Last ${hours}h`;
     }
 
     if (!titleEl || !titleEl.textContent.trim()) {
@@ -204,11 +224,12 @@ if (cards.length) {
 
       if (seriesResponses.length === 1 && seriesResponses[0].type === "text") {
         chartEl.style.display = "none";
+        const latestValue = getLatestSeriesValue(
+          seriesResponses[0].series || [],
+        );
         setTextValue(
           textEl,
-          seriesResponses[0].value == null
-            ? "No data"
-            : String(seriesResponses[0].value),
+          latestValue == null ? "No data" : String(latestValue),
         );
         setStatus(statusEl, "");
         if (latestEl) {
@@ -229,17 +250,32 @@ if (cards.length) {
       if (card.classList.contains("ltss-card--value")) {
         chartEl.style.display = "none";
         const primarySeries = seriesResponses[0];
+        const fallbackUnit = metricMetas[0]?.unit || "";
         const points = primarySeries?.series || [];
         let latestValue = "";
+        let latestTime = "";
         for (let i = points.length - 1; i >= 0; i -= 1) {
           const value = points[i]?.[1];
+          const timestamp = points[i]?.[0];
           if (value !== null && value !== undefined && value !== "") {
-            const unit = primarySeries?.unit ? ` ${primarySeries.unit}` : "";
+            const resolvedUnit = primarySeries?.unit || fallbackUnit;
+            const unit = resolvedUnit ? ` ${resolvedUnit}` : "";
             latestValue = `${formatNumber(value)}${unit}`;
+            if (timestamp) {
+              const date = new Date(timestamp);
+              if (!Number.isNaN(date.getTime())) {
+                const hoursValue = String(date.getHours()).padStart(2, "0");
+                const minutesValue = String(date.getMinutes()).padStart(2, "0");
+                latestTime = `${hoursValue}:${minutesValue}`;
+              }
+            }
             break;
           }
         }
         setTextValue(textEl, latestValue || "No data");
+        if (shouldAutoSubtitle && resolvedSubtitleEl && latestTime) {
+          resolvedSubtitleEl.textContent = latestTime;
+        }
         if (latestEl) {
           latestEl.textContent = "";
           latestEl.classList.add("is-hidden");
@@ -310,7 +346,7 @@ if (cards.length) {
             ...chartOptions,
           };
 
-          if (index === 0) {
+          if (index === 0 && seriesResponses.length === 1) {
             seriesItem.areaStyle = { color: chartAreaColor };
           }
 

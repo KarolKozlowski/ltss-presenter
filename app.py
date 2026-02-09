@@ -33,7 +33,6 @@ class Metric:
 @dataclass(frozen=True)
 class MetricSeries(Metric):
     series: list[tuple[str, Optional[Any]]] = field(default_factory=list)
-    value: Optional[Any] = None
 
 
 @dataclass(frozen=True)
@@ -276,14 +275,10 @@ class Database:
             rows = cur.fetchall()
 
         series: list[tuple[str, Optional[Any]]] = []
-        latest_value: Optional[Any] = None
         for row in rows:
             timestamp = row["time"].isoformat()
             value = row["value"]
-            if metric.type != "text":
-                series.append((timestamp, value))
-            if value is not None:
-                latest_value = value
+            series.append((timestamp, value))
 
         metric_series = MetricSeries(
             metric_id=metric.metric_id,
@@ -292,7 +287,6 @@ class Database:
             type=metric.type,
             chart_options=metric.chart_options,
             series=series,
-            value=latest_value if metric.type == "text" else None,
         )
         self._cache.set(cache_key, metric_series, self._series_cache_ttl)
         return metric_series

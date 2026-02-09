@@ -46,6 +46,19 @@ function updateTextMetric(value) {
   chart.clear();
 }
 
+function getLatestSeriesValue(series) {
+  if (!Array.isArray(series)) {
+    return null;
+  }
+  for (let i = series.length - 1; i >= 0; i -= 1) {
+    const value = series[i]?.[1];
+    if (value !== null && value !== undefined && value !== "") {
+      return value;
+    }
+  }
+  return null;
+}
+
 function showChart() {
   metricText.innerHTML = "";
   metricText.style.display = "none";
@@ -117,7 +130,8 @@ async function fetchSeries() {
   const seriesData = data.series || [];
 
   if (metricType === "text") {
-    updateTextMetric(data.value);
+    const latestValue = getLatestSeriesValue(data.series || []);
+    updateTextMetric(latestValue == null ? null : String(latestValue));
     return;
   }
 
