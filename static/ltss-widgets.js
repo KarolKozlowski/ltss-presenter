@@ -104,6 +104,27 @@ if (cards.length) {
     textEl.classList.toggle("is-hidden", !value);
   }
 
+  function setSubtitle(subtitleEl, text, title) {
+    if (!subtitleEl) {
+      return;
+    }
+    subtitleEl.textContent = text || "";
+    subtitleEl.title = title || subtitleEl.dataset.tooltip || "";
+  }
+
+  function setLastTime(card, latestTime) {
+    if (!card || !latestTime) {
+      return;
+    }
+    const lastTimeEl = card.querySelector(".ltss-card-subtitle-tooltip");
+    if (!lastTimeEl) {
+      return;
+    }
+    lastTimeEl.textContent = latestTime;
+    lastTimeEl.title =
+      lastTimeEl.dataset.tooltip || "Time of last value change.";
+  }
+
   async function resolveMetrics() {
     try {
       return await client.fetchMetrics();
@@ -159,7 +180,7 @@ if (cards.length) {
       resolvedSubtitleEl = newSubtitleEl;
     }
     if (shouldAutoSubtitle && resolvedSubtitleEl) {
-      resolvedSubtitleEl.textContent = `Last ${hours}h`;
+      setSubtitle(resolvedSubtitleEl, `Last ${hours}h`, "");
     }
 
     if (!titleEl || !titleEl.textContent.trim()) {
@@ -238,8 +259,13 @@ if (cards.length) {
           latestValue == null ? "No data" : String(latestValue),
         );
         if (shouldAutoSubtitle && resolvedSubtitleEl && latestTime) {
-          resolvedSubtitleEl.textContent = latestTime;
+          setSubtitle(
+            resolvedSubtitleEl,
+            latestTime,
+            "Time of last value change.",
+          );
         }
+        setLastTime(card, latestTime);
         setStatus(statusEl, "");
         if (latestEl) {
           latestEl.textContent = "";
@@ -288,8 +314,13 @@ if (cards.length) {
         }
         setTextValue(textEl, latestValue || "No data");
         if (shouldAutoSubtitle && resolvedSubtitleEl && latestTime) {
-          resolvedSubtitleEl.textContent = latestTime;
+          setSubtitle(
+            resolvedSubtitleEl,
+            latestTime,
+            "Time of last value change.",
+          );
         }
+        setLastTime(card, latestTime);
         if (latestEl) {
           latestEl.textContent = "";
           latestEl.classList.add("is-hidden");
