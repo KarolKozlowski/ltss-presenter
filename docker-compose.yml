@@ -1,9 +1,11 @@
 ---
 services:
   airgradient:
-    image: git.dotnot.pl/karol.kozlowski/ltss-presenter:latest
+    build: .
+    env_file: .env
+    image: ltss-presenter
     ports:
-      - "20822:5000"
+      - "5000:5000"
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
@@ -13,10 +15,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       INCLUDE_ENTITY_GLOBS: ${INCLUDE_ENTITY_GLOBS}
       LOG_DSN_UNMASKED: ${LOG_DSN_UNMASKED}
-    networks:
-      - postgres-net
-
-networks:
-  postgres-net:
-    external: true
-    name: postgres_shared-net
+      CORS_ENABLED: ${CORS_ENABLED}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS}
+    volumes:
+      - ./config.yaml:/app/config.yaml
